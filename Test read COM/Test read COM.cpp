@@ -10,7 +10,7 @@ void ReadCOM()
     char sReceivedChar;
     while (true)
     {
-        ReadFile(hSerial, &sReceivedChar, 8, &iSize, 0);  // получаем 1 байт
+        ReadFile(hSerial, &sReceivedChar, 1, &iSize, 0);  // получаем 1 байт
         if (iSize > 0)   // если что-то принято, выводим
             cout << sReceivedChar;
     }
