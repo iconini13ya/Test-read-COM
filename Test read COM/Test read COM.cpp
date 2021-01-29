@@ -7,8 +7,7 @@ using namespace std;
 
 int main()
 {
-	DCB dcb = { 0 };
-	dcb.DCBlength = sizeof(dcb);
+	DCB dcb;
 	HANDLE Port;
 	const int READ_TIME = 20;
 	OVERLAPPED sync = { 0 };
@@ -18,11 +17,10 @@ int main()
 	sync.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
 	//. . .
 	Port = CreateFile(L"COM6", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
-	GetCommState(Port, &dcb);
-	dcb.BaudRate = CBR_9600;
-	dcb.ByteSize = 4;
-	dcb.StopBits = ONESTOPBIT;
-	dcb.Parity = NOPARITY;
+	GetCommState(Port, &dcb); 
+	dcb.ByteSize = 2; //Биты данных - 2 
+	dcb.Parity = 0;  // Четность - N 
+	dcb.BaudRate = CBR_9600; 
 	SetCommState(Port, &dcb);
 	if (Port == INVALID_HANDLE_VALUE) {
 		MessageBox(NULL, L"Невозможно открыть последовательный порт", L"Error", MB_OK);
