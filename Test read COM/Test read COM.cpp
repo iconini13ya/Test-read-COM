@@ -1,55 +1,52 @@
-﻿// Test read COM.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-#include <windows.h>
+﻿#include <windows.h>
 #include <iostream>
-#include <cstdlib> // для system
 using namespace std;
-//. . .
+
+HANDLE hSerial;
+
+void ReadCOM()
+{
+    DWORD iSize;
+    char sReceivedChar;
+    while (true)
+    {
+        ReadFile(hSerial, &sReceivedChar, 8, &iSize, 0);  // получаем 1 байт
+        if (iSize > 0)   // если что-то принято, выводим
+            cout << sReceivedChar;
+    }
+}
 
 int main()
 {
-	DCB dcb;
-	HANDLE Port;
-	const int READ_TIME = 20;
-	OVERLAPPED sync = { 0 };
-	unsigned long wait = 0, read = 0, state = 0;
-	unsigned char  dst[2] = {0};
-	unsigned long size = sizeof(dst);
-	sync.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-	//. . .
-	Port = CreateFile(L"COM6", GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_FLAG_OVERLAPPED, NULL);
-	GetCommState(Port, &dcb); 
-	dcb.ByteSize = 2; //Биты данных - 2 
-	dcb.Parity = 0;  // Четность - N 
-	dcb.BaudRate = CBR_9600; 
-	SetCommState(Port, &dcb);
-	if (Port == INVALID_HANDLE_VALUE) {
-		MessageBox(NULL, L"Невозможно открыть последовательный порт", L"Error", MB_OK);
-		ExitProcess(1);
-	}
-	
-	while (true) {
-		/* Устанавливаем маску на события порта */
-		if (SetCommMask(Port, EV_RXCHAR)) {
-			/* Связываем порт и объект синхронизации*/
-			WaitCommEvent(Port, &state, &sync);
-			/* Начинаем ожидание данных*/
-			wait = WaitForSingleObject(sync.hEvent, READ_TIME);
-			/* Данные получены */
-			if (wait == WAIT_OBJECT_0) {
-				/* Начинаем чтение данных */
-				ReadFile(Port, dst, size, &read, &sync);
-				/* Ждем завершения операции чтения */
-				wait = WaitForSingleObject(sync.hEvent, READ_TIME);
-				/* Если все успешно завершено, узнаем какой объем данных прочитан */
-				if (wait == WAIT_OBJECT_0)
-					if (GetOverlappedResult(Port, &sync, &read, FALSE))
+	LPCTSTR sPortName = L"COM6";
+	hSerial = ::CreateFile(sPortName, GENERIC_READ | GENERIC_WRITE, 0, 0, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, 0);
+    if (hSerial == INVALID_HANDLE_VALUE)
+    {
+        if (GetLastError() == ERROR_FILE_NOT_FOUND)
+        {
+            cout << "serial port does not exist.\n";
+        }
+        cout << "some other error occurred.\n";
+    }
+    DCB dcbSerialParams = { 0 };
+    dcbSerialParams.DCBlength = sizeof(dcbSerialParams);
+    if (!GetCommState(hSerial, &dcbSerialParams))
+    {
+        cout << "getting state error\n";
+    }
+    dcbSerialParams.BaudRate = CBR_9600;
+    dcbSerialParams.ByteSize = 8;
+    dcbSerialParams.StopBits = ONESTOPBIT;
+    dcbSerialParams.Parity = NOPARITY;
+    if (!SetCommState(hSerial, &dcbSerialParams))
+    {
+        cout << "error setting serial port state\n";
+    }
+    while (1)
+    {
+        ReadCOM();
+    }
+    return 0;
 
-				cout << dst << endl;
-			}
-		}
-	}
-	//. . .
-	//CloseHandle(Port);
-	//. . .
 }
 
